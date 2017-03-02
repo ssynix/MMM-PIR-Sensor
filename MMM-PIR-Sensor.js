@@ -16,6 +16,7 @@ Module.register('MMM-PIR-Sensor',{
 		relayPIN: false,
 		powerSaving: true,
 		relayOnState: 1,
+		inactivityTimeoutSec: 30,
 	},
 
 	// Override socket notification handler.
@@ -38,6 +39,7 @@ Module.register('MMM-PIR-Sensor',{
 		else if (this.config.relayOnState == 0){
 			this.config.relayOffState = 1
 		}
+		this.config.timerTimeoutMs = this.config.inactivityTimeoutSec * 1000;
 		this.sendSocketNotification('CONFIG', this.config);
 		Log.info('Starting module: ' + this.name);
 	}

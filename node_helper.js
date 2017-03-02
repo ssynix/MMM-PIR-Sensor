@@ -10,13 +10,24 @@
 const NodeHelper = require('node_helper');
 const Gpio = require('onoff').Gpio;
 const exec = require('child_process').exec;
+const Stopwatch = require('timer-stopwatch');
 
 module.exports = NodeHelper.create({
   start: function () {
+    const self = this;
     this.started = false;
+    this.timer = new Stopwatch();
+    this.timer.onDone(function() {
+      self.deactivateMonitor(self);
+    });
   },
 
   activateMonitor: function () {
+    console.log("Turning on the monitor!");
+    this.sendSocketNotification("USER_PRESENCE", true);
+    if (!this.config.powerSaving) {
+      return;
+    }
     if (this.config.relayPIN != false) {
       this.relay.writeSync(this.config.relayOnState);
     }
@@ -25,11 +36,18 @@ module.exports = NodeHelper.create({
     }
   },
 
-  deactivateMonitor: function () {
-    if (this.config.relayPIN != false) {
-      this.relay.writeSync(this.config.relayOffState);
+  // When the timer calls this function, 'this' would not be in the same scope,
+  // so we need to pass it as an argument, when initializing the timer
+  deactivateMonitor: function (self) {
+    console.log("Turning off the monitor...");
+    self.sendSocketNotification("USER_PRESENCE", false);
+    if (!self.config.powerSaving) {
+      return;
     }
-    else if (this.config.relayPIN == false){
+    if (self.config.relayPIN != false) {
+      self.relay.writeSync(self.config.relayOffState);
+    }
+    else if (self.config.relayPIN == false){
       exec("/opt/vc/bin/tvservice -o", null);
     }
   },
@@ -54,16 +72,11 @@ module.exports = NodeHelper.create({
       //Detected movement
       this.pir.watch(function(err, value) {
         if (value == 1) {
-          self.sendSocketNotification("USER_PRESENCE", true);
-          if (self.config.powerSaving){
+          if (self.timer.state != 1) { // NOT RUNNING
             self.activateMonitor();
           }
-         }
-        else if (value == 0) {
-          self.sendSocketNotification("USER_PRESENCE", false);
-          if (self.config.powerSaving){
-            self.deactivateMonitor();
-          }
+          self.timer.reset(self.config.timerTimeoutMs);
+          self.timer.start();
         }
       });
 
