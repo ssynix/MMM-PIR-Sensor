@@ -23,7 +23,7 @@ module.exports = NodeHelper.create({
   },
 
   activateMonitor: function () {
-    console.log("Turning on the monitor!");
+    // console.log("Turning on the monitor!");
     this.sendSocketNotification("USER_PRESENCE", true);
     if (!this.config.powerSaving) {
       return;
@@ -39,7 +39,7 @@ module.exports = NodeHelper.create({
   // When the timer calls this function, 'this' would not be in the same scope,
   // so we need to pass it as an argument, when initializing the timer
   deactivateMonitor: function (self) {
-    console.log("Turning off the monitor...");
+    // console.log("Turning off the monitor...");
     self.sendSocketNotification("USER_PRESENCE", false);
     if (!self.config.powerSaving) {
       return;
